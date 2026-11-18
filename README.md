@@ -43,13 +43,26 @@ input uses. `StreamWriter.WriteLine` adds a line ending after each line, but by 
 
 ## Running it
 
-**Visual Studio:** open `CheckFileSplitter.sln`. Under *Project Properties → Debug*, set the
-command line arguments to the input file path, then run.
+The program targets **.NET Framework 4.8** (`net48`), so it runs on any Windows machine with 4.8
+installed, which includes Windows 10 and 11. It doesn't need .NET Core or .NET 8. The code sticks
+to C# 7.3, the default language version for .NET Framework projects.
 
-**Command line:**
+**Visual Studio (2019 or 2022, with the ".NET desktop development" workload):**
+
+1. Open `CheckFileSplitter.sln`.
+2. Right-click the **CheckFileSplitter** project → *Set as Startup Project*.
+3. *Project Properties → Debug*: set **Command line arguments** to the input file path in quotes,
+   for example `"C:\Data\TrustDisb_20261116020008.txt"`. With no argument the program only prints
+   its usage line and exits.
+4. Press **F5**.
+
+If the build fails with **MSB3644** ("reference assemblies for .NETFramework,Version=v4.8 were not
+found"), install the *.NET Framework 4.8 Developer Pack* from https://aka.ms/msbuild/developerpacks.
+
+**Command line / scheduled task:** after a build, the program is a plain `.exe`:
 
 ```
-dotnet run --project src/CheckFileSplitter -- path\to\TrustDisb_20261116020008.txt [outputFolder]
+src\CheckFileSplitter\bin\Release\net48\CheckFileSplitter.exe "C:\Data\TrustDisb_20261116020008.txt" ["C:\Data\Split"]
 ```
 
 The output goes next to the input file unless you give an output folder. Example console output
