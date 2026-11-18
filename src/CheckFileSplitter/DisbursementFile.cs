@@ -12,9 +12,6 @@ namespace CheckFileSplitter
         public string HeaderLine { get; set; }
         public List<TrustDisbursement> Records { get; set; }
 
-        /// <summary>"\r\n" or "\n", whichever the input file uses, so output files match it.</summary>
-        public string NewLine { get; set; }
-
         public static DisbursementFile Read(string filePath)
         {
             var records = new List<TrustDisbursement>();
@@ -86,19 +83,8 @@ namespace CheckFileSplitter
             return new DisbursementFile
             {
                 HeaderLine = headerLine,
-                Records = records,
-                NewLine = DetectNewLine(filePath)
+                Records = records
             };
-        }
-
-        private static string DetectNewLine(string filePath)
-        {
-            using (var reader = new StreamReader(filePath))
-            {
-                var buffer = new char[64 * 1024];
-                int read = reader.Read(buffer, 0, buffer.Length);
-                return new string(buffer, 0, read).Contains("\r\n") ? "\r\n" : "\n";
-            }
         }
     }
 }

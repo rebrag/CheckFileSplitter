@@ -92,14 +92,7 @@ namespace CheckFileSplitter
             {
                 string outPath = Path.Combine(outputFolder, $"{baseName}_{i + 1:D3}{ext}");
 
-                using (var writer = new StreamWriter(outPath))
-                {
-                    writer.NewLine = file.NewLine;
-                    writer.WriteLine(file.HeaderLine);
-
-                    foreach (TrustDisbursement record in chunks[i])
-                        writer.WriteLine(record.ToPipeLine());
-                }
+                ChunkFileWriter.Write(outPath, file.HeaderLine, chunks[i]);
 
                 List<TrustDisbursement> chunk = chunks[i];
                 Console.WriteLine($"  {Path.GetFileName(outPath)}: {chunk.Count} records " +

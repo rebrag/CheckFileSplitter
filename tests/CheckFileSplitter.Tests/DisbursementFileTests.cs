@@ -35,7 +35,6 @@ namespace CheckFileSplitter.Tests
             Assert.Equal(2, file.Records.Count);
             Assert.True(file.Records[0].HasNoCheckNumber);
             Assert.Equal("500123", file.Records[1].CkNum);
-            Assert.Equal("\n", file.NewLine);
         }
 
         [Fact]
@@ -46,7 +45,7 @@ namespace CheckFileSplitter.Tests
             var file = DisbursementFile.Read(path);
 
             Assert.Equal(RowWithCheck, file.Records[0].ToPipeLine());
-            Assert.Equal("\r\n", file.NewLine);
+            Assert.Equal(Header, file.HeaderLine);   // CRLF input is read without leftover \r
         }
 
         [Fact]

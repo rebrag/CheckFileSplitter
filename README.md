@@ -13,11 +13,12 @@ never split across two files.**
 | 1 | Split the input into chunks of ~500 records named `InputFilename_001.txt`, `_002`, … | `Program.WriteChunks` |
 | 2 | Every row with the same `CkNum` must be in the same file. The input is already sorted by `CkNum`. | `DisbursementSplitter.Split` |
 | 3 | If record 500 starts a check, the rest of that check goes in the same file, **even if it makes the file > 500 records** | `DisbursementSplitter.Split` |
-| 4 | Read with `StreamReader`, write with `StreamWriter` | `DisbursementFile.Read`, `Program.WriteChunks` |
+| 4 | Read with `StreamReader`, write with `StreamWriter` | `DisbursementFile.Read`, `ChunkFileWriter.Write` |
 | 5 | Parse each row (24 `\|`-delimited columns) into a `TrustDisbursement` | `DisbursementFile.Read` |
-| 6 | The input has a header record on top, and **every output file starts with that header** | `DisbursementFile.Read`, `Program.WriteChunks` |
+| 6 | The input has a header record on top, and **every output file starts with that header** | `DisbursementFile.Read`, `ChunkFileWriter.Write` |
 | 7 | The first records may have no `CkNum`. **They all go into the same file, however many there are.** | `TrustDisbursement.CheckKey` |
 | 8 | Write everything the program prints to `Splitter_Log_YYYYMMDD.log` | `SplitterLog`, `TeeTextWriter` |
+| 9 | Every line in each output file, **including the very last one**, ends with CRLF (`\r\n`) | `ChunkFileWriter` |
 
 ### How the split works
 
@@ -35,8 +36,10 @@ The program stops with a clear message, and writes nothing, if:
 - the file isn't sorted by `CkNum`. Rows for one check appearing in two separate places, or
   rows without a `CkNum` that aren't all at the top, would make requirements 2 and 7 impossible.
 
-Each row is written back exactly as it was read (`TrustDisbursement.ToPipeLine()`). The output
-uses the same line endings as the input file (CRLF or LF).
+Each row is written back exactly as it was read (`TrustDisbursement.ToPipeLine()`). Every line of every output file ends with CRLF (`\r\n`), the last line included, whatever the
+input uses. `StreamWriter.WriteLine` adds a line ending after each line, but by default that's
+`Environment.NewLine`, which is `\r\n` only on Windows. So `ChunkFileWriter` sets
+`writer.NewLine = "\r\n"` explicitly, and the output is the same on any machine.
 
 ## Running it
 
@@ -81,11 +84,12 @@ says which), `3` unexpected error (the full stack trace goes to the log).
 dotnet test
 ```
 
-There are 14 xUnit tests in `tests/CheckFileSplitter.Tests`. They cover each rule above: a check
+There are 16 xUnit tests in `tests/CheckFileSplitter.Tests`. They cover each rule above: a check
 straddling record 500, a split at exactly 500, more than 500 rows with no `CkNum`, nothing split
 or dropped, an unsorted file, a missing header, a bad column count, blank lines, and an exact
 round trip. They also cover the log: the file name, output and errors reaching the log, runs being
-appended, and the console being restored afterwards.
+appended, and the console being restored afterwards. Two more check that every line, the last one
+included, ends in CRLF with no bare `\n`, and that the header is the exact first line.
 
 ## Results on the de-identified test file
 
@@ -105,7 +109,8 @@ published.
 | _014 | 120 |
 
 A separate script checked the output. Every file starts with the header. The data rows,
-joined back together, are **byte-for-byte identical** to the input, in the same order. No
+joined back together, are **byte-for-byte identical** to the input (apart from line endings,
+which are now CRLF), in the same order. Every file ends with `\r\n`, with no bare `\n` anywhere. No
 `CkNum` appears in more than one file, all 353 rows with no `CkNum` are in `_001`, and every
 file is closed at the first check boundary at or after 500.
 
@@ -124,7 +129,8 @@ src/CheckFileSplitter/
   TrustDisbursement.cs      one row (24 fields) + ToPipeLine()
   DisbursementFile.cs       reads the header and records with StreamReader
   DisbursementSplitter.cs   the splitting rules and the "sorted by CkNum" check
-  Program.cs                command line, writes the chunk files with StreamWriter
+  ChunkFileWriter.cs        writes one output file with StreamWriter: header + rows, all CRLF
+  Program.cs                command line, names the output files, prints the summary
   SplitterLog.cs            copies console output to Splitter_Log_YYYYMMDD.log
   TeeTextWriter.cs          a TextWriter that writes to two places (screen + log)
 tests/CheckFileSplitter.Tests/
