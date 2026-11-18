@@ -43,9 +43,13 @@ input uses. `StreamWriter.WriteLine` adds a line ending after each line, but by 
 
 ## Running it
 
-The program targets **.NET Framework 4.8** (`net48`), so it runs on any Windows machine with 4.8
-installed, which includes Windows 10 and 11. It doesn't need .NET Core or .NET 8. The code sticks
-to C# 7.3, the default language version for .NET Framework projects.
+The program targets **.NET Framework 4.6** (`net46`), so it runs on any Windows machine with
+.NET Framework **4.6 or later**: 4.6, 4.6.1, 4.6.2, 4.7.x and 4.8 all work, and Windows 10 and 11
+include 4.8. It doesn't need .NET Core or .NET 8. The code sticks to C# 7.3, the default
+language version for .NET Framework projects.
+
+The test project targets `net462`, the oldest version the test tools support. It only runs on
+the development machine, never on the machine that runs the splitter.
 
 **Visual Studio (2019 or 2022, with the ".NET desktop development" workload):**
 
@@ -56,13 +60,16 @@ to C# 7.3, the default language version for .NET Framework projects.
    its usage line and exits.
 4. Press **F5**.
 
-If the build fails with **MSB3644** ("reference assemblies for .NETFramework,Version=v4.8 were not
-found"), install the *.NET Framework 4.8 Developer Pack* from https://aka.ms/msbuild/developerpacks.
+If the build fails with **MSB3644** ("reference assemblies for .NETFramework,Version=v4.6 were not
+found"), Visual Studio is missing the 4.6 targeting pack (Visual Studio 2022 no longer installs it).
+Normally the build downloads the reference assemblies from NuGet on its own. If it doesn't, change
+`<TargetFramework>net46</TargetFramework>` to `net48` in `src/CheckFileSplitter/CheckFileSplitter.csproj`,
+as long as the machine that runs it has 4.8.
 
 **Command line / scheduled task:** after a build, the program is a plain `.exe`:
 
 ```
-src\CheckFileSplitter\bin\Release\net48\CheckFileSplitter.exe "C:\Data\TrustDisb_20261116020008.txt" ["C:\Data\Split"]
+src\CheckFileSplitter\bin\Release\net46\CheckFileSplitter.exe "C:\Data\TrustDisb_20261116020008.txt" ["C:\Data\Split"]
 ```
 
 The output goes next to the input file unless you give an output folder. Example console output
