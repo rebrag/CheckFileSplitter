@@ -13,15 +13,45 @@ namespace CheckFileSplitter
             if (args.Length < 1)
             {
                 Console.WriteLine("Usage: CheckFileSplitter <inputFile> [outputFolder]");
-                Console.WriteLine("Writes <inputName>_001.txt, <inputName>_002.txt, ... (default: next to the input file).");
+                Console.WriteLine("Writes <inputName>_001.txt, <inputName>_002.txt, ... (default: next to the input file),");
+                Console.WriteLine("and appends a copy of this console output to Splitter_Log_YYYYMMDD.log in the same folder.");
                 return 1;
             }
 
             string inputPath = args[0];
-            string outputFolder = args.Length > 1
+            string outputFolder = Path.GetFullPath(args.Length > 1
                 ? args[1]
-                : Path.GetDirectoryName(Path.GetFullPath(inputPath));
+                : Path.GetDirectoryName(Path.GetFullPath(inputPath)));
 
+            SplitterLog log;
+            try
+            {
+                // From here on, every Console.WriteLine (and Console.Error.WriteLine) also goes to
+                // Splitter_Log_YYYYMMDD.log in the output folder
+                log = new SplitterLog(outputFolder, DateTime.Now);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                Console.Error.WriteLine($"Error: could not open the log file in {outputFolder}: {ex.Message}");
+                return 2;
+            }
+
+            using (log)
+            {
+                Console.WriteLine($"===== {DateTime.Now:yyyy-MM-dd HH:mm:ss} CheckFileSplitter started =====");
+                Console.WriteLine($"Input:  {Path.GetFullPath(inputPath)}");
+                Console.WriteLine($"Output: {outputFolder}");
+
+                int exitCode = Run(inputPath, outputFolder);
+
+                Console.WriteLine($"===== {DateTime.Now:yyyy-MM-dd HH:mm:ss} Finished with exit code {exitCode} =====");
+                Console.WriteLine();
+                return exitCode;
+            }
+        }
+
+        static int Run(string inputPath, string outputFolder)
+        {
             try
             {
                 // 1. Read the header and parse every row into a TrustDisbursement
@@ -35,10 +65,17 @@ namespace CheckFileSplitter
                 WriteChunks(file, chunks, inputPath, outputFolder);
                 return 0;
             }
-            catch (Exception ex) when (ex is FormatException || ex is InvalidDataException || ex is IOException)
+            catch (Exception ex) when (ex is FormatException || ex is InvalidDataException || ex is IOException
+                                       || ex is UnauthorizedAccessException)
             {
                 Console.Error.WriteLine($"Error: {ex.Message}");
                 return 2;
+            }
+            catch (Exception ex)
+            {
+                // Anything unexpected still gets recorded in the log, with the full stack trace
+                Console.Error.WriteLine($"Unexpected error: {ex}");
+                return 3;
             }
         }
 

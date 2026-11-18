@@ -17,6 +17,7 @@ never split across two files.**
 | 5 | Parse each row (24 `\|`-delimited columns) into a `TrustDisbursement` | `DisbursementFile.Read` |
 | 6 | The input has a header record on top, and **every output file starts with that header** | `DisbursementFile.Read`, `Program.WriteChunks` |
 | 7 | The first records may have no `CkNum`. **They all go into the same file, however many there are.** | `TrustDisbursement.CheckKey` |
+| 8 | Write everything the program prints to `Splitter_Log_YYYYMMDD.log` | `SplitterLog`, `TeeTextWriter` |
 
 ### How the split works
 
@@ -52,12 +53,27 @@ The output goes next to the input file unless you give an output folder. Example
 for the sample file:
 
 ```
+===== 2026-11-18 15:04:15 CheckFileSplitter started =====
+Input:  C:\Data\SampleTrustDisb.txt
+Output: C:\Data
 Read 1451 records from SampleTrustDisb.txt.
   SampleTrustDisb_001.txt: 502 records (CkNum (none) to 500211)
   SampleTrustDisb_002.txt: 500 records (CkNum 500212 to 500408)
   SampleTrustDisb_003.txt: 449 records (CkNum 500409 to 500596)
-Done: 3 file(s) written to ...
+Done: 3 file(s) written to C:\Data
+===== 2026-11-18 15:04:15 Finished with exit code 0 =====
 ```
+
+### Log file
+
+Everything the program prints, errors included, is also written to
+**`Splitter_Log_YYYYMMDD.log`** in the output folder, for example `Splitter_Log_20261118.log`.
+It works through `Console.SetOut` / `Console.SetError` with a small `TeeTextWriter`, so every
+`Console.WriteLine` goes to both the screen and the log. There is one log per day, and each run is
+appended to it between the `started` / `Finished` lines, so earlier runs that day are kept.
+
+Exit codes: `0` success, `1` no input file given, `2` bad input or a file problem (the message
+says which), `3` unexpected error (the full stack trace goes to the log).
 
 ## Tests
 
@@ -65,10 +81,11 @@ Done: 3 file(s) written to ...
 dotnet test
 ```
 
-There are 11 xUnit tests in `tests/CheckFileSplitter.Tests`. They cover each rule above: a check
+There are 14 xUnit tests in `tests/CheckFileSplitter.Tests`. They cover each rule above: a check
 straddling record 500, a split at exactly 500, more than 500 rows with no `CkNum`, nothing split
 or dropped, an unsorted file, a missing header, a bad column count, blank lines, and an exact
-round trip.
+round trip. They also cover the log: the file name, output and errors reaching the log, runs being
+appended, and the console being restored afterwards.
 
 ## Results on the de-identified test file
 
@@ -108,6 +125,8 @@ src/CheckFileSplitter/
   DisbursementFile.cs       reads the header and records with StreamReader
   DisbursementSplitter.cs   the splitting rules and the "sorted by CkNum" check
   Program.cs                command line, writes the chunk files with StreamWriter
+  SplitterLog.cs            copies console output to Splitter_Log_YYYYMMDD.log
+  TeeTextWriter.cs          a TextWriter that writes to two places (screen + log)
 tests/CheckFileSplitter.Tests/
 samples/SampleTrustDisb.txt made-up data in the same format, for trying it out
 ```
