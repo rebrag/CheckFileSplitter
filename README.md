@@ -8,8 +8,6 @@ never split across two files.**
 
 ## Requirements
 
-Collected from Gary's emails and texts, and each one is covered by a test:
-
 | # | Requirement | Where it's handled |
 |---|---|---|
 | 1 | Split the input into chunks of ~500 records named `InputFilename_001.txt`, `_002`, … | `Program.WriteChunks` |
