@@ -87,6 +87,44 @@ Done: 3 file(s) written to C:\Data
 ===== 2026-11-18 15:04:15 Finished with exit code 0 =====
 ```
 
+### Running it on another PC
+
+The machine that runs the splitter doesn't need the source code or Visual Studio, just the built program.
+
+**1. Copy the program over.**
+After a Release build, the whole program is two small files in `src\CheckFileSplitter\bin\Release\net46\`: `CheckFileSplitter.exe` and `CheckFileSplitter.exe.config`.
+Copy both to the other PC, anywhere you like, for example `C:\Tools\`.
+That PC only needs .NET Framework 4.6 or later, which Windows 10 and 11 already include.
+
+**2. Run it.** There are two ways.
+
+- **Drag and drop:** in File Explorer, drag the input file onto `CheckFileSplitter.exe`.
+  A console window flashes up and closes when it's done.
+  The split files (`..._001.txt`, `_002.txt`, …) and `Splitter_Log_YYYYMMDD.log` appear in the same folder as the input file.
+  If no split files appear, the log says why.
+- **PowerShell**, to watch the output as it runs (use the real file name):
+
+  ```powershell
+  & "C:\Tools\CheckFileSplitter.exe" "X:\TrustDisb_20261116020008.txt"
+  ```
+
+  To keep the split files apart from the input, add an output folder as a second argument.
+  The program creates the folder if it doesn't exist:
+
+  ```powershell
+  & "C:\Tools\CheckFileSplitter.exe" "X:\TrustDisb_20261116020008.txt" "X:\Split"
+  ```
+
+**Things that can go wrong:**
+
+- **No write access to the input folder** (common on shared network drives): the program writes its output and log next to the input by default, so it stops with exit code 2 and the message "could not open the log file".
+  Give it an output folder you can write to, such as `C:\Temp\Split`.
+- **Windows or IT blocks the exe:** a file copied from email or the internet may trigger a "Windows protected your PC" warning.
+  Right-click the exe, choose *Properties*, and tick *Unblock*.
+  If work IT blocks unapproved programs outright, they'll need to approve it.
+- **The input isn't in the expected format:** see [Safety checks](#safety-checks).
+  No split files are written, and the log gives the problem and the line number.
+
 ### Log file
 
 Everything the program prints, errors included, is also written to
@@ -113,9 +151,8 @@ included, ends in CRLF with no bare `\n`, and that the header is the exact first
 
 ## Results on the de-identified test file
 
-Gary's de-identified test file has 1 header row and 7,697 records, of which 353 have no
-`CkNum`. It is **not** in this repo, and neither are its check numbers, so no work data is
-published.
+The de-identified test file has 1 header row and 7,697 records, of which 353 have no `CkNum`.
+It is **not** in this repo, and neither are its check numbers, so no work data is published.
 
 | File | Records |
 |---|---:|
